@@ -23,6 +23,7 @@ function INIT() {
 	    uuid="img_$(shuf -i 10000-99999 -n 1)"
 	    zfs create "$zpool/$uuid" > /dev/null
 	    cp -rf --reflink=auto "$1"/* "/$zpool/$uuid" > /dev/null
+        zfs snapshot "$zpool/$uuid@image"
 	    echo "Created: $uuid"
     else
 	    echo "No directory named '$1' exists"
@@ -62,8 +63,7 @@ function RUN() {
     ip netns exec netns_"$uuid" ip addr add 10.0.0.2/24 dev veth1_"$uuid"
     ip netns exec netns_"$uuid" ip link set dev veth1_"$uuid" up
     ip netns exec netns_"$uuid" ip route add default via 10.0.0.1
-    zfs snapshot "$zpool/$1@$uuid" > /dev/null
-    zfs clone "$zpool/$1@$uuid" "$zpool/$uuid" > /dev/null
+    zfs clone "$zpool/$1@image" "$zpool/$uuid" > /dev/null
     mkdir -p  "/$zpool/$uuid"/etc/
     echo 'nameserver 8.8.8.8' > "/$zpool/$uuid"/etc/resolv.conf
     echo "$2" > "/$zpool/$uuid/$uuid.cmd"
